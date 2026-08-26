@@ -75,12 +75,14 @@ export interface AuditLog {
   id: number;
   event_type: string;
   loan_id: string | null;
-  entity_type: string | null;
-  entity_id: string | null;
-  actor_role: string;
-  actor_id: string;
-  changes: Record<string, any> | null;
-  metadata_info: Record<string, any> | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  actor_role?: string;
+  actor_id?: string;
+  description?: string;
+  performed_by?: string;
+  changes?: Record<string, any> | null;
+  metadata_info?: Record<string, any> | null;
   timestamp: string;
 }
 
