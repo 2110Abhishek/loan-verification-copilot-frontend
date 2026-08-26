@@ -1,6 +1,7 @@
 import { SystemSummary, LoanRecord, LoanException, VerifiedLoan, AuditLog, AiRecommendation } from './types';
 
-const API_BASE = '/api';
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+const API_BASE = rawBaseUrl ? `${rawBaseUrl}/api` : '/api';
 
 export async function uploadCSVFile(file: File, uploadedBy: string = 'usr_op_01') {
   const formData = new FormData();
