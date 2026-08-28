@@ -22,6 +22,7 @@ import {
   ShieldAlert, 
   Cpu, 
   Filter,
+  Activity,
   Trash2,
   CheckSquare,
   Square,
@@ -230,13 +231,15 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-slate-400 flex-shrink-0" />
-            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Severity:</span>
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <div className="w-20 flex items-center space-x-1.5 text-xs text-slate-400 font-medium whitespace-nowrap flex-shrink-0">
+              <Filter className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+              <span>Severity:</span>
+            </div>
             <select
               value={selectedSeverity}
               onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="w-full sm:w-auto bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3 py-2 outline-none cursor-pointer"
+              className="w-full sm:w-48 bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3 py-2.5 outline-none cursor-pointer focus:border-indigo-500 shadow-inner"
             >
               <option value="">All Severities</option>
               <option value="HIGH">🔴 High</option>
@@ -245,12 +248,15 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
             </select>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Status:</span>
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <div className="w-20 flex items-center space-x-1.5 text-xs text-slate-400 font-medium whitespace-nowrap flex-shrink-0">
+              <Activity className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+              <span>Status:</span>
+            </div>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full sm:w-auto bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3 py-2 outline-none cursor-pointer"
+              className="w-full sm:w-48 bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3 py-2.5 outline-none cursor-pointer focus:border-indigo-500 shadow-inner"
             >
               <option value="OPEN">Open Exceptions</option>
               <option value="RESOLVED">Resolved</option>
