@@ -50,7 +50,7 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-[1400px] w-full mx-auto px-8 pb-12">
+      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-8 pb-12">
         {activeTab === 'operator' && (
           <DataOperatorDashboard
             onNavigateToReviewer={() => { setActiveTab('reviewer'); setCurrentRole('REVIEWER'); }}
@@ -78,7 +78,7 @@ export function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 glass-panel">
-        <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 px-8">
+        <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 px-4 sm:px-8">
           <span>Intain Campus FinTech Challenge 2026 — Full Stack Track</span>
           <span className="font-mono">Loan Data Verification Copilot v1.0.0</span>
         </div>

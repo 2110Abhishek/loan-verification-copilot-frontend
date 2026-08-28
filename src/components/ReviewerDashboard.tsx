@@ -24,7 +24,8 @@ import {
   Filter,
   Trash2,
   CheckSquare,
-  Square
+  Square,
+  X
 } from 'lucide-react';
 
 interface ReviewerDashboardProps {
@@ -82,7 +83,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
 
   // Checkbox Single Row Toggle
   const toggleSelectRow = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent opening drawer on checkbox click
+    e.stopPropagation();
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter((item) => item !== id));
     } else {
@@ -122,8 +123,8 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
   };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} selected exceptions?`)) return;
+    if (!selectedIds.length) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} selected exception(s)?`)) return;
 
     try {
       await bulkDeleteExceptions(selectedIds);
@@ -139,7 +140,9 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
   };
 
   const handleBulkAction = async (action: 'APPROVE' | 'REJECT') => {
-    if (selectedIds.length === 0) return;
+    if (!selectedIds.length) return;
+    if (!window.confirm(`Perform bulk ${action} on ${selectedIds.length} item(s)?`)) return;
+
     try {
       await bulkActionExceptions(selectedIds, action);
       setSelectedIds([]);
@@ -150,31 +153,29 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
     }
   };
 
-  const handleTriggerAiReview = async () => {
+  const handleRequestAi = async () => {
     if (!selectedException) return;
     setIsAiLoading(true);
     try {
-      const servicerMock = associatedLoan?.loan_id === 'LN-DEMO-001' ? {
-        servicer_balance: 242000.0,
-        servicer_payment_status: 'DELINQUENT_30',
-        update_timestamp: '2025-08-20'
-      } : undefined;
-
-      const aiRec = await requestAiReview(selectedException.id, servicerMock);
-      setAiRecommendations([aiRec, ...aiRecommendations]);
-    } catch (err) {
-      console.error(err);
+      const rec = await requestAiReview(selectedException.id);
+      setAiRecommendations([rec, ...aiRecommendations]);
+    } catch (err: any) {
+      alert(err.message || 'AI request failed');
     } finally {
       setIsAiLoading(false);
     }
   };
 
-  const handleDecision = async (action: 'APPROVE' | 'REJECT' | 'EDIT' | 'REQUEST_CORRECTION', useAi: boolean = false) => {
+  const handleDecision = async (
+    action: 'APPROVE' | 'REJECT' | 'EDIT' | 'REQUEST_CORRECTION',
+    useAi: boolean = false
+  ) => {
     if (!selectedException) return;
+
     try {
       await submitReviewerDecision(selectedException.id, {
         action,
-        comments: reviewerComment || (useAi ? 'Accepted AI suggestion' : undefined),
+        comments: reviewerComment,
         edited_fields: Object.keys(editFields).length > 0 ? editFields : undefined,
         use_ai_suggestion: useAi,
       });
@@ -191,23 +192,23 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto">
       
       {/* Header Banner */}
-      <div className="glass-panel p-8 rounded-3xl border border-slate-800/80 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800/80 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
         <div>
           <div className="flex items-center space-x-2">
             <Cpu className="w-4 h-4 text-indigo-400" />
             <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">Module C & D — Exception Queue & AI Assistant</span>
           </div>
-          <h2 className="text-3xl font-black text-white tracking-tight mt-1.5">Loan Exception Queue</h2>
-          <p className="text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1.5">Loan Exception Queue</h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
             Review validation rule violations. Select single or multiple entries to delete or approve in bulk.
           </p>
         </div>
         <button
           onClick={loadExceptions}
-          className="px-5 py-3 rounded-2xl text-xs font-bold bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center space-x-2 transition-all cursor-pointer shadow-md"
+          className="w-full sm:w-auto px-5 py-3 rounded-2xl text-xs font-bold bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-md"
         >
           <RefreshCw className="w-4 h-4 text-indigo-400" />
           <span>Refresh Queue</span>
@@ -215,27 +216,27 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="glass-panel p-5 rounded-2xl border border-slate-800/80 shadow-lg flex flex-wrap items-center justify-between gap-4">
+      <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-slate-800/80 shadow-lg flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
+          <div className="relative w-full sm:w-60">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               placeholder="Search Loan ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-900/90 text-xs text-slate-200 pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 w-60 shadow-inner"
+              className="bg-slate-900/90 text-xs text-slate-200 pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 w-full shadow-inner"
             />
           </div>
 
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-xs text-slate-400 font-medium">Severity:</span>
+            <Filter className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Severity:</span>
             <select
               value={selectedSeverity}
               onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3.5 py-2 outline-none cursor-pointer"
+              className="w-full sm:w-auto bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3 py-2 outline-none cursor-pointer"
             >
               <option value="">All Severities</option>
               <option value="HIGH">🔴 High</option>
@@ -245,11 +246,11 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-slate-400 font-medium">Status:</span>
+            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Status:</span>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3.5 py-2 outline-none cursor-pointer"
+              className="w-full sm:w-auto bg-slate-900/90 text-xs text-slate-200 border border-slate-700 rounded-xl px-3 py-2 outline-none cursor-pointer"
             >
               <option value="OPEN">Open Exceptions</option>
               <option value="RESOLVED">Resolved</option>
@@ -259,7 +260,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
           </div>
         </div>
 
-        <div className="text-xs text-slate-400 font-mono">
+        <div className="text-xs text-slate-400 font-mono text-right sm:text-left">
           Total: <span className="text-indigo-400 font-bold">{exceptions.length}</span> exceptions
         </div>
 
@@ -267,8 +268,8 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
 
       {/* BULK ACTIONS BAR */}
       {selectedIds.length > 0 && (
-        <div className="glass-panel p-4 rounded-2xl border border-indigo-500/50 bg-indigo-950/40 shadow-xl flex flex-wrap items-center justify-between gap-4 animate-fade-in">
-          <div className="flex items-center space-x-3">
+        <div className="glass-panel p-4 rounded-2xl border border-indigo-500/50 bg-indigo-950/40 shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center justify-between sm:justify-start space-x-3">
             <span className="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/40">
               Selected: {selectedIds.length} exceptions
             </span>
@@ -280,10 +281,10 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => handleBulkAction('APPROVE')}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 flex items-center space-x-1.5 cursor-pointer transition-all"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-1.5 cursor-pointer transition-all"
             >
               <CheckCircle className="w-4 h-4" />
               <span>Approve Selected ({selectedIds.length})</span>
@@ -291,7 +292,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
 
             <button
               onClick={() => handleBulkAction('REJECT')}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30 flex items-center space-x-1.5 cursor-pointer transition-all"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30 flex items-center justify-center space-x-1.5 cursor-pointer transition-all"
             >
               <XCircle className="w-4 h-4" />
               <span>Reject Selected ({selectedIds.length})</span>
@@ -299,7 +300,7 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
 
             <button
               onClick={handleBulkDelete}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 flex items-center space-x-1.5 cursor-pointer transition-all"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 flex items-center justify-center space-x-1.5 cursor-pointer transition-all"
             >
               <Trash2 className="w-4 h-4" />
               <span>Delete Selected ({selectedIds.length})</span>
@@ -308,114 +309,101 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
         </div>
       )}
 
-      {/* Main Grid: Queue Table (Left) & Loan Detail / AI Drawer (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Grid Layout: Exception Table + AI Reviewer Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         
-        {/* Left Column: Exception Queue Table */}
-        <div className={`${selectedException ? 'lg:col-span-6' : 'lg:col-span-12'} glass-panel rounded-3xl border border-slate-800/80 shadow-2xl overflow-hidden`}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/90 text-slate-400 uppercase font-semibold border-b border-slate-800">
-                <tr>
-                  <th className="px-4 py-4 w-10 text-center">
-                    <button
-                      onClick={toggleSelectAll}
-                      title={isAllSelected ? "Deselect All" : "Select All"}
-                      className="text-slate-400 hover:text-indigo-400 focus:outline-none"
-                    >
-                      {isAllSelected ? (
-                        <CheckSquare className="w-4 h-4 text-indigo-400" />
-                      ) : (
-                        <Square className="w-4 h-4" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="px-4 py-4">Severity</th>
-                  <th className="px-4 py-4">Loan ID</th>
-                  <th className="px-4 py-4">Rule Name</th>
-                  <th className="px-4 py-4">Field</th>
-                  <th className="px-4 py-4">Status</th>
-                  <th className="px-4 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                {loading ? (
+        {/* Exception Queue Table */}
+        <div className={`space-y-4 ${selectedException ? 'lg:col-span-6' : 'lg:col-span-12'}`}>
+          <div className="glass-panel rounded-2xl border border-slate-800/90 overflow-hidden shadow-xl">
+            <div className="overflow-x-auto max-h-[600px] no-scrollbar">
+              <table className="w-full text-left border-collapse min-w-[650px]">
+                <thead className="sticky top-0 bg-slate-950/90 backdrop-blur-md text-[10px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-slate-500 font-medium">Loading queue...</td>
-                  </tr>
-                ) : exceptions.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-slate-500 font-medium">No matching exceptions found.</td>
-                  </tr>
-                ) : (
-                  exceptions.map((exc) => {
-                    const isSelected = selectedException?.id === exc.id;
-                    const isChecked = selectedIds.includes(exc.id);
-
-                    return (
-                      <tr
-                        key={exc.id}
-                        onClick={() => handleSelectException(exc)}
-                        className={`cursor-pointer transition-all duration-150 ${
-                          isSelected 
-                            ? 'bg-indigo-950/50 border-l-4 border-indigo-500' 
-                            : isChecked 
-                            ? 'bg-slate-800/60' 
-                            : 'hover:bg-slate-800/40'
-                        }`}
+                    <th className="p-4 w-10 text-center">
+                      <button 
+                        onClick={toggleSelectAll} 
+                        className="text-slate-400 hover:text-white transition-colors"
+                        title={isAllSelected ? "Deselect All" : "Select All"}
                       >
-                        <td className="px-4 py-4 text-center">
-                          <button
-                            onClick={(e) => toggleSelectRow(exc.id, e)}
-                            className="text-slate-400 hover:text-indigo-400 focus:outline-none"
-                          >
-                            {isChecked ? (
-                              <CheckSquare className="w-4 h-4 text-indigo-400" />
-                            ) : (
-                              <Square className="w-4 h-4" />
-                            )}
-                          </button>
-                        </td>
+                        {isAllSelected ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4" />}
+                      </button>
+                    </th>
+                    <th className="px-4 py-4">Severity</th>
+                    <th className="px-4 py-4">Loan ID</th>
+                    <th className="px-4 py-4">Rule Name</th>
+                    <th className="px-4 py-4">Field</th>
+                    <th className="px-4 py-4">Status</th>
+                    <th className="px-4 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-xs">
+                  {exceptions.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-500">
+                        {loading ? 'Loading exception queue...' : 'No exceptions found matching filters.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    exceptions.map((exc) => {
+                      const isSelected = selectedException?.id === exc.id;
+                      const isRowChecked = selectedIds.includes(exc.id);
 
-                        <td className="px-4 py-4">
-                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                            exc.severity === 'HIGH'
-                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                              : exc.severity === 'MEDIUM'
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                          }`}>
-                            {exc.severity}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 font-mono font-bold text-slate-100">{exc.loan_id}</td>
-                        <td className="px-4 py-4 font-semibold text-slate-200">{exc.rule_name}</td>
-                        <td className="px-4 py-4 font-mono text-slate-400">{exc.field_name}</td>
-                        <td className="px-4 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            exc.flag_status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
-                          }`}>
-                            {exc.flag_status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right flex items-center justify-end space-x-2">
-                          <button 
-                            onClick={(e) => handleDeleteSingle(exc.id, e)}
-                            title="Delete this entry"
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/30 text-rose-400 border border-rose-500/20 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button className="text-indigo-400 font-bold hover:underline">
-                            Inspect &rarr;
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                      return (
+                        <tr 
+                          key={exc.id}
+                          onClick={() => handleSelectException(exc)}
+                          className={`hover:bg-slate-800/50 cursor-pointer transition-colors ${
+                            isSelected ? 'bg-indigo-950/40 border-l-4 border-indigo-500' : ''
+                          } ${isRowChecked ? 'bg-indigo-950/20' : ''}`}
+                        >
+                          <td className="p-4 text-center">
+                            <button 
+                              onClick={(e) => toggleSelectRow(exc.id, e)} 
+                              className="text-slate-400 hover:text-white transition-colors"
+                            >
+                              {isRowChecked ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4" />}
+                            </button>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                              exc.severity === 'HIGH'
+                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                : exc.severity === 'MEDIUM'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                            }`}>
+                              {exc.severity}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 font-mono font-bold text-slate-100 whitespace-nowrap">{exc.loan_id}</td>
+                          <td className="px-4 py-4 font-semibold text-slate-200">{exc.rule_name}</td>
+                          <td className="px-4 py-4 font-mono text-slate-400 whitespace-nowrap">{exc.field_name}</td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                              exc.flag_status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                            }`}>
+                              {exc.flag_status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right whitespace-nowrap flex items-center justify-end space-x-2">
+                            <button 
+                              onClick={(e) => handleDeleteSingle(exc.id, e)}
+                              title="Delete this entry"
+                              className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/30 text-rose-400 border border-rose-500/20 transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button className="text-indigo-400 font-bold hover:underline">
+                              Inspect &rarr;
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -424,11 +412,11 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
           <div className="lg:col-span-6 space-y-6">
             
             {/* Exception Info Header */}
-            <div className="glass-panel p-6 rounded-3xl border border-indigo-500/40 shadow-2xl space-y-4">
+            <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-indigo-500/40 shadow-2xl space-y-4">
               <div className="flex justify-between items-start">
                 <div>
                   <span className="text-xs font-mono text-indigo-400 font-bold block">{selectedException.rule_code}</span>
-                  <h3 className="text-xl font-black text-white mt-0.5">{selectedException.rule_name}</h3>
+                  <h3 className="text-lg sm:text-xl font-black text-white mt-0.5">{selectedException.rule_name}</h3>
                   <p className="text-xs text-slate-400 mt-1">{selectedException.error_message}</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -443,157 +431,145 @@ export const ReviewerDashboard: React.FC<ReviewerDashboardProps> = ({ onRefreshS
                     onClick={() => setSelectedException(null)}
                     className="text-slate-500 hover:text-slate-200 font-bold text-sm p-1"
                   >
-                    ✕
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Loan Details Grid */}
+              {/* Loan Overview Grid */}
               {associatedLoan && (
-                <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs">
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-800 text-xs">
                   <div>
-                    <span className="text-slate-400 block font-medium">Original Principal:</span>
-                    <span className="font-bold text-slate-200">{formatCurrency(associatedLoan.original_principal, currency)}</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Original Principal</span>
+                    <span className="font-mono text-slate-200 font-bold">
+                      {formatCurrency(associatedLoan.original_principal, currency)}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Current Balance:</span>
-                    <span className="font-bold text-rose-400">{formatCurrency(associatedLoan.current_balance, currency)}</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Current Balance</span>
+                    <span className="font-mono text-rose-400 font-bold">
+                      {formatCurrency(associatedLoan.current_balance, currency)}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Origination Date:</span>
-                    <span className="font-bold text-slate-200">{associatedLoan.origination_date}</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Origination Date</span>
+                    <span className="font-mono text-slate-300">{associatedLoan.origination_date}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Maturity Date:</span>
-                    <span className="font-bold text-slate-200">{associatedLoan.maturity_date}</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Maturity Date</span>
+                    <span className="font-mono text-slate-300">{associatedLoan.maturity_date}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Payment Status / DPD:</span>
-                    <span className="font-bold text-slate-200">{associatedLoan.payment_status} ({associatedLoan.days_past_due} DPD)</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Payment Status / DPD</span>
+                    <span className="font-mono text-slate-300">{associatedLoan.payment_status} ({associatedLoan.days_past_due} DPD)</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Document Status:</span>
-                    <span className="font-bold text-amber-400">{associatedLoan.document_status}</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Document Status</span>
+                    <span className="font-mono text-amber-400 font-bold">{associatedLoan.document_status}</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* AI Review Assistant Panel */}
-            <div className="glass-panel p-6 rounded-3xl border border-indigo-500/30 bg-gradient-to-b from-indigo-950/30 to-slate-900/60 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                    <Sparkles className="w-5 h-5" />
+            <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/30 to-slate-900/90 shadow-2xl space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-300">
+                    <Sparkles className="w-5 h-5 animate-spin-slow" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">AI Exception Review Assistant</h4>
-                    <span className="text-[10px] text-indigo-300">Local Copilot Diagnostic Engine</span>
+                    <h4 className="text-sm font-black text-white tracking-wide">AI Exception Review Assistant</h4>
+                    <p className="text-[10px] text-slate-400">Local Copilot Diagnostic Engine</p>
                   </div>
                 </div>
 
                 <button
-                  onClick={handleTriggerAiReview}
+                  onClick={handleRequestAi}
                   disabled={isAiLoading}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold gradient-button text-white flex items-center space-x-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
                 >
-                  {isAiLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Analyzing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Cpu className="w-4 h-4" />
-                      <span>Analyze Exception with AI</span>
-                    </>
-                  )}
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{isAiLoading ? 'Analyzing...' : 'Analyze Exception with AI'}</span>
                 </button>
               </div>
 
-              {/* AI Recommendation Output */}
-              {aiRecommendations.length > 0 ? (
+              {/* AI Recommendations List */}
+              {aiRecommendations.length > 0 && (
                 <div className="space-y-4 pt-2">
-                  {aiRecommendations.map((aiRec) => (
-                    <div key={aiRec.id} className="p-5 rounded-2xl bg-slate-900/90 border border-indigo-500/40 space-y-4 text-xs shadow-md">
-                      
+                  {aiRecommendations.map((rec) => (
+                    <div key={rec.id} className="p-4 rounded-2xl bg-slate-900/90 border border-indigo-500/30 space-y-3">
                       <div>
-                        <span className="text-indigo-400 font-bold uppercase tracking-wider block text-[10px]">Root Cause Explanation</span>
-                        <p className="text-slate-200 mt-1 leading-relaxed">{aiRec.explanation}</p>
+                        <span className="text-[10px] uppercase font-extrabold tracking-widest text-indigo-400 block mb-1">
+                          Root Cause Explanation
+                        </span>
+                        <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                          {rec.explanation}
+                        </p>
                       </div>
 
-                      {aiRec.suggested_value && (
-                        <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/40 flex items-center justify-between">
+                      {rec.suggested_value && (
+                        <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div>
-                            <span className="text-slate-400 block text-[10px] font-medium">Suggested Correction ({aiRec.suggested_field}):</span>
-                            <span className="font-mono font-bold text-emerald-400 text-sm">
-                              {aiRec.suggested_field?.includes('balance') || aiRec.suggested_field?.includes('principal')
-                                ? formatCurrency(aiRec.suggested_value, currency)
-                                : aiRec.suggested_value}
+                            <span className="text-[10px] uppercase font-bold text-emerald-400 block">
+                              Suggested Correction ({rec.suggested_field})
+                            </span>
+                            <span className="font-mono text-xs font-black text-emerald-300">
+                              {rec.suggested_value}
                             </span>
                           </div>
+
                           <button
                             onClick={() => handleDecision('APPROVE', true)}
-                            className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md cursor-pointer transition-all"
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30 cursor-pointer"
                           >
                             Accept AI Suggestion
                           </button>
                         </div>
                       )}
 
-                      {/* AI Audit Metadata Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-[10px] text-slate-400 font-mono">
-                        <span>Model: <strong className="text-slate-200">{aiRec.model_name}</strong></span>
-                        <span>Confidence: <strong className="text-emerald-400">{Math.round(aiRec.confidence_score * 100)}%</strong></span>
-                        <span>Time: <strong className="text-slate-200">{aiRec.execution_time_ms}ms</strong></span>
+                      <div className="flex flex-wrap items-center justify-between text-[10px] text-slate-500 border-t border-slate-800 pt-2.5 gap-2">
+                        <span>Model: <strong className="text-slate-400 font-mono">{rec.model_name}</strong></span>
+                        <span>Confidence: <strong className="text-emerald-400">{(rec.confidence_score * 100).toFixed(0)}%</strong></span>
+                        <span>Time: <strong className="text-slate-400 font-mono">{rec.execution_time_ms}ms</strong></span>
                       </div>
                     </div>
                   ))}
-                </div>
-              ) : (
-                <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-800 rounded-2xl bg-slate-900/40">
-                  Click <strong className="text-indigo-300">"Analyze Exception with AI"</strong> to generate diagnostic notes, compare servicer data, and review suggested corrections.
                 </div>
               )}
             </div>
 
             {/* Human Reviewer Action Controls */}
-            <div className="glass-panel p-6 rounded-3xl border border-slate-800/80 shadow-2xl space-y-4">
-              <h4 className="text-sm font-bold text-white">Reviewer Decision & Action Control</h4>
-              
-              <div className="space-y-4">
-                <textarea
-                  placeholder="Enter reviewer audit notes / comments..."
-                  value={reviewerComment}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewerComment(e.target.value)}
-                  className="w-full bg-slate-900/90 text-xs text-slate-200 p-4 rounded-2xl border border-slate-700 focus:outline-none focus:border-indigo-500 h-24 font-sans shadow-inner"
-                />
+            <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-slate-800/90 shadow-2xl space-y-4">
+              <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-300 flex items-center space-x-2">
+                <MessageSquare className="w-4 h-4 text-indigo-400" />
+                <span>Human Reviewer Decision</span>
+              </h4>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => handleDecision('APPROVE', false)}
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 flex items-center space-x-2 cursor-pointer transition-all"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Approve Loan</span>
-                  </button>
+              <textarea
+                rows={2}
+                placeholder="Add reviewer notes or audit rationale..."
+                value={reviewerComment}
+                onChange={(e) => setReviewerComment(e.target.value)}
+                className="w-full bg-slate-900 text-xs text-slate-200 p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 shadow-inner"
+              />
 
-                  <button
-                    onClick={() => handleDecision('REJECT', false)}
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20 flex items-center space-x-2 cursor-pointer transition-all"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span>Reject Loan</span>
-                  </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => handleDecision('APPROVE', false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Approve Loan</span>
+                </button>
 
-                  <button
-                    onClick={() => handleDecision('REQUEST_CORRECTION', false)}
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/20 flex items-center space-x-2 cursor-pointer transition-all"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>Request Correction</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleDecision('REJECT', false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Reject Loan</span>
+                </button>
               </div>
             </div>
 
